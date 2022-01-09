@@ -1,0 +1,136 @@
+---
+title: "Storms and other severe weather events analysis"
+author: "Shevarev, M.V."
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
+## Data
+
+* [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+
+There is also some documentation of the database available. Here you will find how some of the variables are constructed/defined.
+
+* National Weather Service[Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+* National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+The events in the database start in the year 1950 and end in November 2011. In the earlier years of the database there are generally fewer events recorded, most likely due to a lack of good records. More recent years should be considered more complete.
+
+## Loading and processing the data
+```{R simulation, echo = FALSE, results = "hide", warning=FALSE,  message=FALSE}
+##install.packages(c("tidyverse", "knitr", "gridExtra"))
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(gridExtra)
+library(knitr)
+```
+
+```{R}
+currdir <- "./data"
+if(!dir.exists("./data")) dir.create("./data")
+setwd(currdir)
+dburl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+bz2 <- "storm_data.csv.bz2"
+download.file(dburl, bz2)
+
+#Read the data
+data <- read.csv(bzfile("storm_data.csv.bz2"))
+head(data)
+```
+
+```{R}
+summary(data)
+```
+
+```{R}
+names(data)
+```
+
+## Effects of severe weather conditions on human health
+
+### Fatalities
+
+```{R}
+fatalityData <- aggregate(FATALITIES ~ EVTYPE, data = data, FUN = "sum")
+fatalityData <- arrange(fatalityData, desc(fatalityData[, 2]))
+top10fatalityData <- fatalityData[1:10,]
+head(top10fatalityData)
+```
+
+### Injury
+
+```{R}
+injuryData <- aggregate(INJURIES ~ EVTYPE, data = data, FUN=sum)
+injuryData <- arrange(injuryData, desc(injuryData[, 2]))
+top10injuryData <- injuryData[1:10,]
+head(top10injuryData)
+```
+
+```{R}
+fatalityPlot <- ggplot(top10fatalityData, aes(x = reorder(EVTYPE, -FATALITIES), y = FATALITIES)) +
+  geom_bar(stat = "identity") +
+  xlab("Weather Event Type") +
+  ylab("Number of Fatalities") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle('Top 10 Fatalities')
+
+injuryPlot <- ggplot(top10injuryData, aes(x = reorder(EVTYPE, -INJURIES), y = INJURIES)) +
+  geom_bar(stat = "identity") +
+  xlab("Weather Event Type") +
+  ylab("Number of Injuries") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle('Top 10 Injuries')
+
+grid.arrange(fatalityPlot, injuryPlot, nrow = 1)
+```
+
+## Economic consequences of severe weather events
+
+### Property damage
+
+```{R}
+PropertyDamageData <- aggregate(PROPDMG ~ EVTYPE, data = data, FUN=sum)
+PropertyDamageData <- arrange(PropertyDamageData, desc(PropertyDamageData[, 2]))
+top10PropertyDamageData <- PropertyDamageData[1:10,]
+head(top10PropertyDamageData)
+```
+
+### Crop damage
+```{R}
+CropDamageData <- aggregate(CROPDMG ~ EVTYPE, data = data, FUN=sum)
+CropDamageData <- arrange(CropDamageData, desc(CropDamageData[, 2]))
+top10CropDamageData <- CropDamageData[1:10,]
+head(top10CropDamageData)
+```
+
+```{R}
+PropertyPlot <- ggplot(top10PropertyDamageData, aes(x = reorder(EVTYPE, -PROPDMG), y = PROPDMG)) +
+  geom_bar(stat = "identity") +
+  xlab("Weather Event Type") +
+  ylab("Property Damage") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle('Top 10 Property Damage')
+
+CropDamagePlot <- ggplot(top10CropDamageData, aes(x = reorder(EVTYPE, -CROPDMG), y = CROPDMG)) +
+  geom_bar(stat = "identity") +
+  xlab("Weather Event Type") +
+  ylab("Property Damage") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle('Top 10 Crop Damage')
+grid.arrange(PropertyPlot, CropDamagePlot, nrow = 1)
+```
+
+## Some conclusions
+1. Tornadoes are the most dangerous for human health. This dangerous natural phenomenon accounts for the largest number of fatal cases and injuries;
+2. The tornado also causes the greatest damage to property; 
+3. Crops suffer the most from hail.
